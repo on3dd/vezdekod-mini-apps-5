@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
 import { useAdaptivity, ViewWidth, Group } from '@vkontakte/vkui';
 import { GyroscopeData2D } from '@limbus-mini-apps';
@@ -19,9 +19,10 @@ const Canvas = styled.canvas`
 type MazeProps = {
   maze: any;
   position: GyroscopeData2D;
+  prevPosition: GyroscopeData2D;
 };
 
-export const Maze: React.FC<MazeProps> = ({ maze, position }) => {
+export const Maze: React.FC<MazeProps> = ({ maze, position, prevPosition }) => {
   const { viewWidth } = useAdaptivity();
 
   const ref = useRef<HTMLCanvasElement>(null);
@@ -58,10 +59,14 @@ export const Maze: React.FC<MazeProps> = ({ maze, position }) => {
       const ctx = ref.current.getContext('2d');
 
       if (ctx) {
-        ctx.clearRect(position.x * cellSize, position.y * cellSize, cellSize, cellSize);
+        ctx.fillStyle = 'rgba(0,0,255,1)';
+        ctx.fillRect(prevPosition.x * cellSize, prevPosition.y * cellSize, cellSize, cellSize);
+
+        ctx.fillStyle = 'rgba(0,255,0,1)';
+        ctx.fillRect(position.x * cellSize, position.y * cellSize, cellSize, cellSize);
       }
     }
-  }, [maze, position.x, position.y, ref, cellSize]);
+  }, [maze, position, prevPosition, ref, cellSize]);
 
   return (
     <Group>

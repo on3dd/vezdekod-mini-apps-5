@@ -14,10 +14,10 @@ import {
   PanelHeader,
   withAdaptivity,
 } from '@vkontakte/vkui';
-import { GyroscopeData2D, GyroscopeData3D } from '@limbus-mini-apps';
+import { GyroscopeData2D, GyroscopeData3D, Direction } from '@limbus-mini-apps';
 
 import { PanelWrapper } from './utils/wrappers';
-import { getInitialMaze } from './utils/functions';
+import { getInitialMaze, getDirection, getNegativeDirection, changePosition } from './utils/functions';
 import { GlobalStyles } from './utils/globalStyles';
 import { Maze } from './components/Maze';
 
@@ -25,11 +25,36 @@ const Container = styled.main`
   width: 100%;
 `;
 
+type Operation = {
+  position: GyroscopeData2D;
+  velocity: GyroscopeData2D;
+  previousPosition: GyroscopeData2D;
+  previousVelocity: GyroscopeData2D;
+} & Partial<{
+  sign: number; // 0 | -1 | 1
+  direction: Direction;
+}>;
+
+const MAX_DIFF = 0.05;
+const MIN_DIFF = 0.001;
+
 const App: React.FC = () => {
   const [maze] = useState(getInitialMaze());
   const [isAvailable, setIsAvailable] = useState<boolean>();
-  const [position, setPosition] = useState<GyroscopeData2D>({ x: 1, y: 1 });
+  // const [operation, setOperation] = useState<Operation>({
+  //   position: { x: 1, y: 1 },
+  //   prevPosition: { x: 0, y: 1 },
+  //   sign: 0,
+  // });
+  const [operation, setOperation] = useState<Operation>({
+    position: { x: 1, y: 1 },
+    velocity: { x: 0, y: 0 },
+    previousPosition: { x: 1, y: 1 },
+    previousVelocity: { x: 0, y: 0 },
+  });
+  // const [position, setPosition] = useState<GyroscopeData2D>({ x: 1, y: 1 });
   const [gyroscopeData, setGyroscopeData] = useState<GyroscopeData3D>({ x: 0, y: 0, z: 0 });
+  const [gyroscopeStatus, setGyroscopeStatus] = useState<string>();
   const [gyroscopeError, setGyroscopeError] = useState<ErrorData>();
 
   useEffect(() => {
@@ -62,7 +87,7 @@ const App: React.FC = () => {
         }
 
         case 'VKWebAppGyroscopeChanged': {
-          console.log('VKWebAppGyroscopeChanged', detail.data);
+          // console.log('VKWebAppGyroscopeChanged', detail.data);
 
           const data = {
             x: parseFloat(detail.data.x),
@@ -72,21 +97,55 @@ const App: React.FC = () => {
 
           setGyroscopeData(() => data);
 
-          if (Math.abs(data.x) > 0.0005 || Math.abs(data.z) > 0.0005) {
-            console.log('setPosition cond');
+          setOperation((p) => {
+            if (p.sign && p.direction) {
+              const oppositeDir = getNegativeDirection(p.direction);
+              const oppositeSign = Math.sign(data[oppositeDir]);
 
-            setPosition((prev) =>
-              Math.abs(data.x) > Math.abs(data.z)
-                ? {
-                    ...prev,
-                    x: prev.x + 1 * Math.sign(data.x),
-                  }
-                : {
-                    ...prev,
-                    y: prev.y + 1 * Math.sign(data.z),
-                  },
-            );
-          }
+              const diff = Math.abs(data[oppositeDir] - p.velocity[oppositeDir]);
+
+              if (diff <= MAX_DIFF || (diff > MIN_DIFF && p.sign === oppositeSign)) {
+                setGyroscopeStatus(() => `same ${p.sign}${p.direction}`);
+
+                return {
+                  sign: p.sign,
+                  direction: p.direction,
+                  previousPosition: p.position,
+                  previousVelocity: p.velocity,
+                  position: {
+                    [oppositeDir]: p.position[oppositeDir],
+                    [p.direction]: changePosition(p.position, p.sign, p.direction, maze),
+                  } as GyroscopeData2D,
+                  velocity: { x: data.x, y: data.y },
+                };
+              }
+            }
+
+            if (Math.abs(data.x) > MIN_DIFF || Math.abs(data.y) > MIN_DIFF) {
+              const mainDirection = getDirection(data.x, data.y);
+              const secondaryDirection = getNegativeDirection(mainDirection);
+
+              const sign = Math.abs(data.x) > Math.abs(data.y) ? Math.sign(data.x) : Math.sign(data.y);
+
+              setGyroscopeStatus(() => `${sign}${mainDirection}`);
+
+              return {
+                sign,
+                direction: mainDirection,
+                position: {
+                  [secondaryDirection]: p.position[secondaryDirection],
+                  [mainDirection]: changePosition(p.position, Math.sign(data.x), mainDirection, maze),
+                } as GyroscopeData2D,
+                velocity: { x: data.x, y: data.y },
+                previousPosition: p.position,
+                previousVelocity: p.velocity,
+              };
+            }
+
+            setGyroscopeStatus(() => 'default');
+
+            return p;
+          });
           break;
         }
       }
@@ -95,7 +154,7 @@ const App: React.FC = () => {
         bridge.send('VKWebAppGyroscopeStop');
       };
     });
-  }, []);
+  }, [maze]);
 
   return (
     <ConfigProvider>
@@ -143,7 +202,9 @@ const App: React.FC = () => {
                     }
                     style={{ padding: '0.5rem 1rem' }}
                   >
-                    <Headline weight="regular">{`x: ${position.x}, y: ${position.y}`}</Headline>
+                    <Headline weight="regular">
+                      {`x: ${operation.position.x}, y: ${operation.position.y}, status: ${gyroscopeStatus}`}
+                    </Headline>
                   </Group>
 
                   {gyroscopeError && (
@@ -161,7 +222,13 @@ const App: React.FC = () => {
                   )}
 
                   <Group style={{ padding: '0.5rem 1rem' }}>
-                    <Maze maze={maze} position={position} />
+                    <Maze
+                      maze={maze}
+                      position={operation.position}
+                      prevPosition={operation.previousPosition}
+                      // position={{ x: operation.position.x + 1, y: operation.position.y + 1 }}
+                      // prevPosition={{ x: operation.previousPosition.x + 1, y: operation.previousPosition.y + 1 }}
+                    />
                   </Group>
                 </Panel>
               </PanelWrapper>

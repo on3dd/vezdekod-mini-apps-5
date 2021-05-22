@@ -7,4 +7,6 @@ declare module '@limbus-mini-apps' {
   export type GyroscopeData3D = GyroscopeData2D & {
     z: number;
   };
+
+  export type Direction = 'x' | 'y';
 }
