@@ -41,18 +41,12 @@ const MIN_DIFF = 0.001;
 const App: React.FC = () => {
   const [maze] = useState(getInitialMaze());
   const [isAvailable, setIsAvailable] = useState<boolean>();
-  // const [operation, setOperation] = useState<Operation>({
-  //   position: { x: 1, y: 1 },
-  //   prevPosition: { x: 0, y: 1 },
-  //   sign: 0,
-  // });
   const [operation, setOperation] = useState<Operation>({
     position: { x: 1, y: 1 },
     velocity: { x: 0, y: 0 },
     previousPosition: { x: 1, y: 1 },
     previousVelocity: { x: 0, y: 0 },
   });
-  // const [position, setPosition] = useState<GyroscopeData2D>({ x: 1, y: 1 });
   const [gyroscopeData, setGyroscopeData] = useState<GyroscopeData3D>({ x: 0, y: 0, z: 0 });
   const [gyroscopeStatus, setGyroscopeStatus] = useState<string>();
   const [gyroscopeError, setGyroscopeError] = useState<ErrorData>();
@@ -87,7 +81,7 @@ const App: React.FC = () => {
         }
 
         case 'VKWebAppGyroscopeChanged': {
-          // console.log('VKWebAppGyroscopeChanged', detail.data);
+          console.log('VKWebAppGyroscopeChanged', detail.data);
 
           const data = {
             x: parseFloat(detail.data.x),
@@ -222,13 +216,7 @@ const App: React.FC = () => {
                   )}
 
                   <Group style={{ padding: '0.5rem 1rem' }}>
-                    <Maze
-                      maze={maze}
-                      position={operation.position}
-                      prevPosition={operation.previousPosition}
-                      // position={{ x: operation.position.x + 1, y: operation.position.y + 1 }}
-                      // prevPosition={{ x: operation.previousPosition.x + 1, y: operation.previousPosition.y + 1 }}
-                    />
+                    <Maze maze={maze} position={operation.position} prevPosition={operation.previousPosition} />
                   </Group>
                 </Panel>
               </PanelWrapper>
