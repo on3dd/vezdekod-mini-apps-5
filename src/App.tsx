@@ -14,35 +14,21 @@ import {
   PanelHeader,
   withAdaptivity,
 } from '@vkontakte/vkui';
-import { FlashlightState } from '@limbus-mini-apps';
+// import {} from '@limbus-mini-apps';
 
 import { PanelWrapper } from './utils/wrappers';
 import { GlobalStyles } from './utils/globalStyles';
-import { FlashLight } from './components/Flashlight';
+import { Maze } from './components/Maze';
 
 const Container = styled.main`
   width: 100%;
 `;
 
-const INITIAL_FLASHLIGHT_STATE: FlashlightState = [false, false, false, false, false, false, false, false];
-
 const App: React.FC = () => {
   const [isAvailable, setIsAvailable] = useState<boolean>();
-  const [flashlightError, setFlashlightError] = useState<ErrorData>();
-
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [buttonState, setButtonState] = useState<FlashlightState>(INITIAL_FLASHLIGHT_STATE);
-
-  const onToggleButtonState = useCallback(
-    (idx: number) => {
-      setButtonState((p) => [...p.slice(0, idx), !p[idx], ...p.slice(idx + 1)] as FlashlightState);
-    },
-    [setButtonState],
-  );
+  const [gyroscopeError, setGyroscopeError] = useState<ErrorData>();
 
   useEffect(() => {
-    bridge.send('VKWebAppFlashGetInfo');
-
     bridge.subscribe(({ detail }: VKBridgeEvent<AnyReceiveMethodName>) => {
       switch (detail.type) {
         case 'VKWebAppUpdateConfig': {
@@ -56,55 +42,9 @@ const App: React.FC = () => {
 
           break;
         }
-
-        case 'VKWebAppFlashGetInfoResult': {
-          console.log('VKWebAppFlashGetInfoResult', detail.data.is_available);
-          setIsAvailable(() => detail.data.is_available);
-          break;
-        }
-
-        case 'VKWebAppFlashGetInfoFailed': {
-          console.log('VKWebAppFlashGetInfoFailed', detail.data);
-          setFlashlightError(() => detail.data);
-          break;
-        }
-
-        case 'VKWebAppFlashSetLevelResult': {
-          console.log('VKWebAppFlashSetLevelResult', detail.data);
-          break;
-        }
-
-        case 'VKWebAppFlashSetLevelFailed': {
-          console.log('VKWebAppFlashSetLevelFailed', detail.data);
-          setFlashlightError(() => detail.data);
-          break;
-        }
       }
     });
   }, []);
-
-  const shineFlashlight = useCallback(
-    (idx: number) => {
-      const prevIdx = idx === 0 ? buttonState.length : idx - 1;
-
-      if (buttonState[idx] !== buttonState[prevIdx]) {
-        bridge.send('VKWebAppFlashSetLevel', { level: buttonState[idx] ? 1 : 0 });
-      }
-
-      setCurrentIdx(() => (idx + 1) % 8);
-    },
-    [buttonState, setCurrentIdx],
-  );
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (isAvailable && flashlightError === undefined) {
-        shineFlashlight(currentIdx);
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [isAvailable, flashlightError, currentIdx, shineFlashlight]);
 
   return (
     <ConfigProvider>
@@ -116,20 +56,20 @@ const App: React.FC = () => {
 
               <PanelWrapper id="home">
                 <Panel id="home">
-                  <PanelHeader>Flashlight app</PanelHeader>
+                  <PanelHeader>Maze app</PanelHeader>
 
                   <Group
                     header={
                       <Title level="2" weight="regular">
-                        Is flashlight available
+                        Is gyroscope available
                       </Title>
                     }
                     style={{ padding: '0.5rem 1rem' }}
                   >
-                    <Headline weight="regular">: {`${isAvailable}`}</Headline>
+                    <Headline weight="regular">{`${isAvailable}`}</Headline>
                   </Group>
 
-                  {flashlightError && (
+                  {gyroscopeError && (
                     <Group
                       header={
                         <Title level="2" weight="regular">
@@ -138,16 +78,14 @@ const App: React.FC = () => {
                       }
                       style={{ padding: '0.5rem 1rem' }}
                     >
-                      <Headline weight="regular">{`${flashlightError.error_type}`}</Headline>
-                      <Headline weight="regular">Error data: {JSON.stringify(flashlightError.error_data)}</Headline>
+                      <Headline weight="regular">{`${gyroscopeError.error_type}`}</Headline>
+                      <Headline weight="regular">Error data: {JSON.stringify(gyroscopeError.error_data)}</Headline>
                     </Group>
                   )}
 
-                  <FlashLight
-                    currentIdx={currentIdx}
-                    buttonState={buttonState}
-                    onToggleButtonState={onToggleButtonState}
-                  />
+                  <Group style={{ padding: '0.5rem 1rem' }}>
+                    <Maze />
+                  </Group>
                 </Panel>
               </PanelWrapper>
             </Container>
