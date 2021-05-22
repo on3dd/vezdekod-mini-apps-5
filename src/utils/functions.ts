@@ -33,7 +33,7 @@ export const doGenerate = (maze: any, cellSize: number, ref: RefObject<HTMLCanva
       for (let i = 0; i < maze.height; i++) {
         for (let j = 0; j < maze.width; j++) {
           if (maze.get(i, j)) {
-            ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+            ctx.fillRect(i * cellSize, j * cellSize, cellSize, cellSize);
           }
         }
       }
@@ -54,7 +54,7 @@ export const doSolve = (maze: any, cellSize: number, ref: RefObject<HTMLCanvasEl
       ctx.fillStyle = 'rgba(100, 149, 237, 0.5)';
 
       for (let i = 0; i < sln.length; i++) {
-        ctx.fillRect(sln[i][1] * cellSize, sln[i][0] * cellSize, cellSize, cellSize);
+        ctx.fillRect(sln[i][0] * cellSize, sln[i][1] * cellSize, cellSize, cellSize);
       }
 
       ctx.fillStyle = 'rgba(255, 255, 0, 1)';
@@ -75,13 +75,13 @@ export const changePosition = (position: GyroscopeData2D, sign: number, directio
         return position.x;
       };
 
-      // if (maze.get(position.x - 1, position.y)) {
-      //   return position.x - 1;
-      // }
+      if (maze.get(position.x - 1, position.y)) {
+        return position.x - 1;
+      }
 
-      // return position.x;
+      return position.x;
 
-      return position.x - 1;
+      // return position.x - 1;
 
     }
 
@@ -90,13 +90,13 @@ export const changePosition = (position: GyroscopeData2D, sign: number, directio
         return position.x;
       };
 
-      // if (maze.get(position.x + 1, position.y)) {
-      //   return position.x + 1;
-      // }
+      if (maze.get(position.x + 1, position.y)) {
+        return position.x + 1;
+      }
 
-      // return position.x;
+      return position.x;
 
-      return position.x + 1;
+      // return position.x + 1;
     }
 
     return position.x;
@@ -106,13 +106,13 @@ export const changePosition = (position: GyroscopeData2D, sign: number, directio
         return position.y;
       };
 
-      // if (maze.get(position.x, position.y - 1)) {
-      //   return position.y - 1;
-      // }
+      if (maze.get(position.x, position.y - 1)) {
+        return position.y - 1;
+      }
 
-      // return position.y;
+      return position.y;
 
-      return position.y - 1;
+      // return position.y - 1;
 
     }
 
@@ -121,13 +121,13 @@ export const changePosition = (position: GyroscopeData2D, sign: number, directio
         return position.y;
       };
 
-      // if (maze.get(position.x, position.y + 1)) {
-      //   return position.y + 1;
-      // }
+      if (maze.get(position.x, position.y + 1)) {
+        return position.y + 1;
+      }
 
-      // return position.y;
+      return position.y;
 
-      return position.y + 1;
+      // return position.y + 1;
     }
 
     return position.y;

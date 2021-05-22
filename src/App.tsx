@@ -105,7 +105,7 @@ const App: React.FC = () => {
               const diff = Math.abs(data[oppositeDir] - p.velocity[oppositeDir]);
 
               if (diff <= MAX_DIFF || (diff > MIN_DIFF && p.sign === oppositeSign)) {
-                setGyroscopeStatus(() => `same ${p.sign}${p.direction}`);
+                setGyroscopeStatus(() => `same: ${p.sign}${p.direction}`);
 
                 return {
                   sign: p.sign,
