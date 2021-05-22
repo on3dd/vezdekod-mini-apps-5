@@ -14,7 +14,7 @@ import {
   PanelHeader,
   withAdaptivity,
 } from '@vkontakte/vkui';
-// import {} from '@limbus-mini-apps';
+import { GyroscopeData2D, GyroscopeData3D } from '@limbus-mini-apps';
 
 import { PanelWrapper } from './utils/wrappers';
 import { getInitialMaze } from './utils/functions';
@@ -25,16 +25,11 @@ const Container = styled.main`
   width: 100%;
 `;
 
-type GyroscopeData = {
-  x: number;
-  y: number;
-  z: number;
-};
-
 const App: React.FC = () => {
   const [maze] = useState(getInitialMaze());
   const [isAvailable, setIsAvailable] = useState<boolean>();
-  const [gyroscopeData, setGyroscopeData] = useState<GyroscopeData>({ x: 0, y: 0, z: 0 });
+  const [position, setPosition] = useState<GyroscopeData2D>({ x: 1, y: 1 });
+  const [gyroscopeData, setGyroscopeData] = useState<GyroscopeData3D>({ x: 0, y: 0, z: 0 });
   const [gyroscopeError, setGyroscopeError] = useState<ErrorData>();
 
   useEffect(() => {
@@ -68,11 +63,30 @@ const App: React.FC = () => {
 
         case 'VKWebAppGyroscopeChanged': {
           console.log('VKWebAppGyroscopeChanged', detail.data);
-          setGyroscopeData(() => ({
+
+          const data = {
             x: parseFloat(detail.data.x),
             y: parseFloat(detail.data.y),
             z: parseFloat(detail.data.z),
-          }));
+          };
+
+          setGyroscopeData(() => data);
+
+          if (Math.abs(data.x) > 0.0005 || Math.abs(data.z) > 0.0005) {
+            console.log('setPosition cond');
+
+            setPosition((prev) =>
+              Math.abs(data.x) > Math.abs(data.z)
+                ? {
+                    ...prev,
+                    x: prev.x + 1 * Math.sign(data.x),
+                  }
+                : {
+                    ...prev,
+                    y: prev.y + 1 * Math.sign(data.z),
+                  },
+            );
+          }
           break;
         }
       }
@@ -115,8 +129,21 @@ const App: React.FC = () => {
                     style={{ padding: '0.5rem 1rem' }}
                   >
                     <Headline weight="regular">
-                      {`x: ${gyroscopeData.x}, y: ${gyroscopeData.y}, z: ${gyroscopeData.z}`}
+                      {`x: ${gyroscopeData.x.toFixed(4)}, y: ${gyroscopeData.y.toFixed(
+                        4,
+                      )}, z: ${gyroscopeData.z.toFixed(4)}`}
                     </Headline>
+                  </Group>
+
+                  <Group
+                    header={
+                      <Title level="2" weight="regular">
+                        Current position
+                      </Title>
+                    }
+                    style={{ padding: '0.5rem 1rem' }}
+                  >
+                    <Headline weight="regular">{`x: ${position.x}, y: ${position.y}`}</Headline>
                   </Group>
 
                   {gyroscopeError && (
@@ -134,7 +161,7 @@ const App: React.FC = () => {
                   )}
 
                   <Group style={{ padding: '0.5rem 1rem' }}>
-                    <Maze maze={maze} />
+                    <Maze maze={maze} position={position} />
                   </Group>
                 </Panel>
               </PanelWrapper>
