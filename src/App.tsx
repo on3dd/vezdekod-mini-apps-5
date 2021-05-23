@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import '@vkontakte/vkui/dist/vkui.css';
 import bridge, { VKBridgeEvent, AnyReceiveMethodName, ErrorData } from '@vkontakte/vk-bridge';
@@ -14,10 +14,11 @@ import {
   PanelHeader,
   withAdaptivity,
 } from '@vkontakte/vkui';
+import amaze from 'amazejs';
 import { GyroscopeData2D, GyroscopeData3D, Direction } from '@limbus-mini-apps';
 
 import { PanelWrapper } from './utils/wrappers';
-import { getInitialMaze, getDirection, getNegativeDirection, changePosition } from './utils/functions';
+import { generateNewMaze, getDirection, getNegativeDirection, changePosition } from './utils/functions';
 import { GlobalStyles } from './utils/globalStyles';
 import { Maze } from './components/Maze';
 
@@ -25,7 +26,7 @@ const Container = styled.main`
   width: 100%;
 `;
 
-type Operation = {
+type GyroscopeOperation = {
   position: GyroscopeData2D;
   velocity: GyroscopeData2D;
   previousPosition: GyroscopeData2D;
@@ -37,21 +38,58 @@ type Operation = {
 
 const MAX_DIFF = 0.05;
 const MIN_DIFF = 0.001;
+const INITIAL_LEVEL = 1;
+const INITIAL_MAZE_SIZE = 5;
+const CELL_SIZE_BY_LEVEL = 6;
+const INITIAL_GYROSCOPE_DATA: GyroscopeData3D = {
+  x: 0,
+  y: 0,
+  z: 0,
+};
+const INITIAL_GYROSCOPE_OPERATION: GyroscopeOperation = {
+  position: { x: 1, y: 1 },
+  velocity: { x: 0, y: 0 },
+  previousPosition: { x: 1, y: 1 },
+  previousVelocity: { x: 0, y: 0 },
+};
 
 const App: React.FC = () => {
-  const [maze] = useState(getInitialMaze());
+  const [level, setLevel] = useState(INITIAL_LEVEL);
+  const [maze, setMaze] = useState<amaze.Backtracker>(generateNewMaze(INITIAL_MAZE_SIZE + CELL_SIZE_BY_LEVEL * level));
   const [isAvailable, setIsAvailable] = useState<boolean>();
-  const [operation, setOperation] = useState<Operation>({
-    position: { x: 1, y: 1 },
-    velocity: { x: 0, y: 0 },
-    previousPosition: { x: 1, y: 1 },
-    previousVelocity: { x: 0, y: 0 },
-  });
-  const [gyroscopeData, setGyroscopeData] = useState<GyroscopeData3D>({ x: 0, y: 0, z: 0 });
+  const [operation, setOperation] = useState<GyroscopeOperation>(INITIAL_GYROSCOPE_OPERATION);
+  const [gyroscopeData, setGyroscopeData] = useState<GyroscopeData3D>(INITIAL_GYROSCOPE_DATA);
   const [gyroscopeStatus, setGyroscopeStatus] = useState<string>();
   const [gyroscopeError, setGyroscopeError] = useState<ErrorData>();
 
   useEffect(() => {
+    const size = INITIAL_MAZE_SIZE + CELL_SIZE_BY_LEVEL * level;
+    if (size !== maze.width) {
+      console.log('generating new maze!');
+      setMaze(() => generateNewMaze(INITIAL_MAZE_SIZE + CELL_SIZE_BY_LEVEL * level));
+    }
+  }, [maze.width, level, setMaze]);
+
+  useEffect(() => {
+    const increaseLevel = async () => {
+      if (maze && operation.position.x === maze.width - 2 && operation.position.y === maze.height - 2) {
+        console.log('level up!');
+
+        await bridge.send('VKWebAppGyroscopeStop');
+
+        setTimeout(() => {
+          setLevel((prev) => prev + 1);
+          setOperation(() => INITIAL_GYROSCOPE_OPERATION);
+        }, 1000);
+      }
+    };
+
+    increaseLevel();
+  }, [maze, operation, setLevel]);
+
+  useEffect(() => {
+    console.log('maze', maze);
+
     bridge.send('VKWebAppGyroscopeStart');
 
     bridge.subscribe(({ detail }: VKBridgeEvent<AnyReceiveMethodName>) => {
@@ -82,6 +120,10 @@ const App: React.FC = () => {
 
         case 'VKWebAppGyroscopeChanged': {
           console.log('VKWebAppGyroscopeChanged', detail.data);
+
+          if (maze === undefined) {
+            return console.log('Maze is undefined!');
+          }
 
           const data = {
             x: parseFloat(detail.data.x),
@@ -215,9 +257,11 @@ const App: React.FC = () => {
                     </Group>
                   )}
 
-                  <Group style={{ padding: '0.5rem 1rem' }}>
-                    <Maze maze={maze} position={operation.position} prevPosition={operation.previousPosition} />
-                  </Group>
+                  {!!maze && (
+                    <Group style={{ padding: '0.5rem 1rem' }}>
+                      <Maze maze={maze} position={operation.position} prevPosition={operation.previousPosition} />
+                    </Group>
+                  )}
                 </Panel>
               </PanelWrapper>
             </Container>

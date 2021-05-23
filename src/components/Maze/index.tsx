@@ -1,7 +1,8 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
 import { useAdaptivity, ViewWidth, Group } from '@vkontakte/vkui';
 import { GyroscopeData2D } from '@limbus-mini-apps';
+import amaze from 'amazejs';
 
 import { COLORS } from '../../utils/constants';
 import { doGenerate, doSolve } from '../../utils/functions';
@@ -17,7 +18,7 @@ const Canvas = styled.canvas`
 `;
 
 type MazeProps = {
-  maze: any;
+  maze: amaze.Backtracker;
   position: GyroscopeData2D;
   prevPosition: GyroscopeData2D;
 };
@@ -59,7 +60,7 @@ export const Maze: React.FC<MazeProps> = ({ maze, position, prevPosition }) => {
       const ctx = ref.current.getContext('2d');
 
       if (ctx) {
-        ctx.fillStyle = 'rgba(0,0,255,1)';
+        ctx.fillStyle = 'rgba(255,255,255,1)';
         ctx.fillRect(prevPosition.x * cellSize, prevPosition.y * cellSize, cellSize, cellSize);
 
         ctx.fillStyle = 'rgba(0,255,0,1)';

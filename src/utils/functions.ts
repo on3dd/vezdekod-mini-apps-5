@@ -4,7 +4,7 @@ import amaze from 'amazejs';
 import { GyroscopeData2D, Direction } from '@limbus-mini-apps';
 
 
-export const getInitialMaze = (size = 55) => {
+export const generateNewMaze = (size = 55) => {
   const maze = new amaze.Backtracker(size, size);
 
   maze.reset();
@@ -14,7 +14,7 @@ export const getInitialMaze = (size = 55) => {
 };
 
 
-export const doGenerate = (maze: any, cellSize: number, ref: RefObject<HTMLCanvasElement>) => {
+export const doGenerate = (maze: amaze.Backtracker, cellSize: number, ref: RefObject<HTMLCanvasElement>) => {
   if (ref.current) {
     ref.current.width = maze.width * cellSize;
     ref.current.height = maze.height * cellSize;
@@ -35,7 +35,7 @@ export const doGenerate = (maze: any, cellSize: number, ref: RefObject<HTMLCanva
   }
 };
 
-export const doSolve = (maze: any, cellSize: number, ref: RefObject<HTMLCanvasElement>) => {
+export const doSolve = (maze: amaze.Backtracker, cellSize: number, ref: RefObject<HTMLCanvasElement>) => {
   if (ref.current) {
     const ctx = ref.current.getContext('2d');
     const sln = maze.solve([1, 1], [maze.height - 2, maze.width - 2]);
@@ -47,7 +47,7 @@ export const doSolve = (maze: any, cellSize: number, ref: RefObject<HTMLCanvasEl
         ctx.fillRect(sln[i][0] * cellSize, sln[i][1] * cellSize, cellSize, cellSize);
       }
 
-      ctx.fillStyle = 'rgba(0,255,0,1)';
+      ctx.fillStyle = 'rgba(0,0,255,1)';
       ctx.fillRect(cellSize, cellSize, cellSize, cellSize);
 
       ctx.fillStyle = 'rgba(255,0,0,1)';
@@ -56,7 +56,7 @@ export const doSolve = (maze: any, cellSize: number, ref: RefObject<HTMLCanvasEl
   }
 };
 
-export const changePosition = (position: GyroscopeData2D, sign: number, direction: Direction, maze: any): number => {
+export const changePosition = (position: GyroscopeData2D, sign: number, direction: Direction, maze: amaze.Backtracker): number => {
   switch (direction) {
     case 'x': {
       if (sign < 0 && maze.get(position.x - 1, position.y)) {
